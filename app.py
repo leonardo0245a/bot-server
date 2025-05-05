@@ -1,50 +1,73 @@
-from flask import Response
 from flask import Flask, request, jsonify
-import json
-import os
+import threading
+import time
 
 app = Flask(__name__)
 
+# Diccionario para guardar bots activos
+active_bots = {}
 
-@app.route("/api/config", methods=["POST"])
-def save_config():
+# Función simulada del bot
+
+
+def run_bot(bot_id, config):
+    print(f"Bot {bot_id} iniciado con config:", config)
+    while active_bots.get(bot_id, {}).get("running"):
+        time.sleep(5)
+        print(f"Bot {bot_id} ejecutándose...")
+
+    print(f"Bot {bot_id} detenido.")
+
+# Ruta para iniciar un bot
+
+
+@app.route("/api/bots/start", methods=["POST"])
+def start_bot():
     data = request.json
-    print("✔ Recibido /api/config:", data)  # <-- Añade esto para ver datos
-    with open("config.json", "w") as f:
-        json.dump(data, f, indent=4)
-    return jsonify({"status": "config saved"})
+    bot_id = data["id"]
+    config = data["config"]
+
+    if bot_id in active_bots and active_bots[bot_id]["running"]:
+        return jsonify({"error": "Bot ya está en ejecución"}), 400
+
+    active_bots[bot_id] = {
+        "config": config,
+        "running": True
+    }
+
+    t = threading.Thread(target=run_bot, args=(bot_id, config))
+    t.start()
+
+    return jsonify({"status": f"Bot {bot_id} iniciado"})
+
+# Ruta para detener un bot
 
 
-@app.route("/api/bots", methods=["POST"])
-def save_bots():
+@app.route("/api/bots/stop", methods=["POST"])
+def stop_bot():
     data = request.json
-    print("✔ Recibido /api/bots:", data)  # <-- Añade esto también
-    with open("bots.json", "w") as f:
-        json.dump(data, f, indent=4)
-    return jsonify({"status": "bots saved"})
+    bot_id = data["id"]
+
+    if bot_id not in active_bots or not active_bots[bot_id]["running"]:
+        return jsonify({"error": "Bot no está en ejecución"}), 400
+
+    active_bots[bot_id]["running"] = False
+    return jsonify({"status": f"Bot {bot_id} detenido"})
+
+# Ruta para listar bots activos
 
 
-@app.route("/api/ping")
-def ping():
-    return jsonify({"status": "online"})
+@app.route("/api/bots", methods=["GET"])
+def list_bots():
+    return jsonify(active_bots)
 
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+# Ruta simple de verificación
 
 
 @app.route("/")
 def home():
-    html = "<h1>Bot server is online</h1><p>Everything is working!</p>"
-    return Response(html, mimetype='text/html')
+    return "<h1>Bot server online</h1>"
 
 
-@app.route("/files/bots.json", methods=["GET"])
-def serve_bots_file():
-    try:
-        with open("bots.json", "r") as f:
-            data = json.load(f)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
