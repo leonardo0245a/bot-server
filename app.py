@@ -38,3 +38,13 @@ if __name__ == "__main__":
 def home():
     html = "<h1>Bot server is online</h1><p>Everything is working!</p>"
     return Response(html, mimetype='text/html')
+
+
+@app.route("/files/bots.json", methods=["GET"])
+def serve_bots_file():
+    try:
+        with open("bots.json", "r") as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
