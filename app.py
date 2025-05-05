@@ -8,6 +8,8 @@ app = Flask(__name__)
 
 @app.route("/api/config", methods=["POST"])
 def save_config():
+    print("✔️ Recibido /api/config")
+
     data = request.json
     with open("config.json", "w") as f:
         json.dump(data, f, indent=4)
@@ -16,6 +18,8 @@ def save_config():
 
 @app.route("/api/bots", methods=["POST"])
 def save_bots():
+    print("✔️ Recibido /api/bots")
+
     data = request.json
     with open("bots.json", "w") as f:
         json.dump(data, f, indent=4)
