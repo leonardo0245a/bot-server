@@ -1,3 +1,4 @@
+from flask import Response
 from flask import Flask, request, jsonify
 import json
 import os
@@ -33,4 +34,5 @@ if __name__ == "__main__":
 
 @app.route("/")
 def home():
-    return "<h1>Bot server is online</h1><p>Everything is working!</p>"
+    html = "<h1>Bot server is online</h1><p>Everything is working!</p>"
+    return Response(html, mimetype='text/html')
