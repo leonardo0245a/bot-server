@@ -1,66 +1,69 @@
-import os
+from flask import Flask, request, jsonify, Response
 import threading
 import time
-from flask import Flask, request, jsonify
+import os
 
 app = Flask(__name__)
+running_bots = {}
 
-# Diccionario global para controlar los bots
-active_bots = {}
-
-# Función simulada de un bot
+# Función simulada para el bot
 
 
-def run_bot(bot_id, symbol, monto):
-    while active_bots.get(bot_id, {}).get("running"):
-        print(f"🟢 Bot {bot_id} ejecutando con {symbol} y monto {monto}")
+def bot_worker(bot_id, config):
+    while config["running"]:
+        print(f"[{bot_id}] Ejecutando bot con configuración: {config}")
+        # Simula trabajo (puedes ajustar o reemplazar esto con tu lógica real)
         time.sleep(5)
-    print(f"🔴 Bot {bot_id} detenido")
+
+# Página de prueba para confirmar que el servidor está activo
+
+
+@app.route("/")
+def index():
+    return Response("<h1>Bot server is online</h1><p>Use /api/start_bot para iniciar</p>", mimetype='text/html')
+
+# Iniciar un bot en segundo plano
 
 
 @app.route("/api/start_bot", methods=["POST"])
 def start_bot():
     data = request.json
-    bot_id = data["id"]
-    symbol = data["symbol"]
-    monto = data["monto"]
+    bot_id = data.get("id")
+    if not bot_id:
+        return jsonify({"error": "Falta el ID del bot"}), 400
+    if bot_id in running_bots:
+        return jsonify({"error": f"Bot '{bot_id}' ya está en ejecución"}), 400
+    config = {"running": True, **data}
+    thread = threading.Thread(
+        target=bot_worker, args=(bot_id, config), daemon=True)
+    running_bots[bot_id] = {"thread": thread, "config": config}
+    thread.start()
+    return jsonify({"status": f"Bot '{bot_id}' iniciado"})
 
-    # Si ya está activo, detenerlo primero
-    if bot_id in active_bots and active_bots[bot_id]["running"]:
-        return jsonify({"error": "Este bot ya está en ejecución"}), 400
-
-    active_bots[bot_id] = {
-        "symbol": symbol,
-        "monto": monto,
-        "running": True,
-        "thread": threading.Thread(target=run_bot, args=(bot_id, symbol, monto))
-    }
-
-    active_bots[bot_id]["thread"].start()
-    return jsonify({"status": f"Bot {bot_id} iniciado correctamente"})
+# Detener un bot en ejecución
 
 
 @app.route("/api/stop_bot", methods=["POST"])
 def stop_bot():
     data = request.json
-    bot_id = data["id"]
+    bot_id = data.get("id")
+    bot = running_bots.get(bot_id)
+    if not bot:
+        return jsonify({"error": f"Bot '{bot_id}' no encontrado"}), 404
+    bot["config"]["running"] = False
+    return jsonify({"status": f"Bot '{bot_id}' detenido"})
 
-    if bot_id in active_bots and active_bots[bot_id]["running"]:
-        active_bots[bot_id]["running"] = False
-        return jsonify({"status": f"Bot {bot_id} detenido"})
-    return jsonify({"error": "Bot no está en ejecución"}), 400
+# Consultar bots activos
 
 
 @app.route("/api/bots", methods=["GET"])
 def list_bots():
-    estado = {bot_id: {
-        "symbol": bot["symbol"],
-        "monto": bot["monto"],
-        "running": bot["running"]
-    } for bot_id, bot in active_bots.items()}
-    return jsonify(estado)
+    return jsonify({
+        "bots": list(running_bots.keys())
+    })
 
 
-@app.route("/")
-def home():
-    return "<h1>Servidor de bots está activo</h1>"
+# Puerto correcto para Render
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
