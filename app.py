@@ -33,4 +33,4 @@ if __name__ == "__main__":
 
 @app.route("/")
 def home():
-    return jsonify({"status": "ok", "message": "Bot server online"})
+    return "<h1>Bot server is online</h1><p>Everything is working!</p>"
