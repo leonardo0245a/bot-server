@@ -135,6 +135,16 @@ def config():
     return jsonify({"status": "Configuración guardada"})
 
 
+
+@app.route("/api/bot_status", methods=["GET"])
+def bot_status():
+    bot_id = request.args.get("id")
+    bot = running_bots.get(bot_id)
+    if not bot:
+        return jsonify({"error": "Bot no encontrado"}), 404
+    return jsonify(bot["config"])
+
+
 # Iniciar servidor
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
