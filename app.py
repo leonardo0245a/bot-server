@@ -70,6 +70,16 @@ def list_bots():
     return jsonify({"bots": list(running_bots.keys())})
 
 
+# Recibir bots desde cliente
+@app.route("/api/report_bots", methods=["POST"])
+def report_bots():
+    data = request.json
+    print("📥 Lista de bots recibida desde cliente:")
+    for bot in data:
+        print(f"  - {bot['symbol']} en {bot['exchange']}")
+    return jsonify({"status": "Bots recibidos correctamente"})
+
+
 # Ejecutar localmente o en Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
