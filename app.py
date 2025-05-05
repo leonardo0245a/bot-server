@@ -21,6 +21,8 @@ def load_active_bots():
             print("✅ Bots restaurados desde active_bots.json")
         except Exception as e:
             print(f"[ERROR] Cargando bots activos: {e}")
+         
+            load_active_bots()
 
 # Guardar bots activos en JSON
 
@@ -149,5 +151,4 @@ def bot_status():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print("🟢 Iniciando servidor...")
-    load_active_bots()
     app.run(host="0.0.0.0", port=port)
